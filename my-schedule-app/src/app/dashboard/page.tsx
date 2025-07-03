@@ -1,270 +1,511 @@
 "use client"
 
-import React, { useState } from "react"
-import { Button } from "../../components/ui/button"
-import { Input } from "../../components/ui/input"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
+import {
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  Clock,
+  FileText,
+  MoreHorizontal,
+  User,
+  Check,
+  Code,
+  LogOut,
+  Settings,
+  Bell,
+  HelpCircle,
+  Shield,
+  Globe,
+  X,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 
 const translations = {
   en: {
-    login: "Login",
-    signUp: "Sign Up",
-    welcomeBack: "Welcome Back",
-    createAccount: "Create Account",
-    fullName: "Full Name",
-    emailAddress: "Email Address",
-    password: "Password",
-    confirmPassword: "Confirm Password",
-    signIn: "Sign In",
-    createAccountBtn: "Create Account",
-    forgotPassword: "Forgot your password?",
+    labsRooms: "Labs & Rooms",
+    faculty: "Faculty",
+    today: "Today",
+    reports: "Reports",
+    more: "More",
+    softwareDevLabs: "Software Development Labs",
+    softwareDevFaculty: "Software Development Faculty",
+    todaysSchedule: "Today's Schedule",
+    available: "Available",
+    reserved: "Reserved",
+    reserveRoom: "Reserve Room",
+    cancelReservation: "Cancel Reservation",
+    bookConsultation: "Book Consultation",
+    cancelBooking: "Cancel Booking",
+    teacher: "Teacher",
+    capacity: "Capacity",
+    students: "students",
+    equipment: "Equipment",
+    expertise: "Expertise",
+    reservedBy: "Reserved by",
+    week: "Week",
+    settings: "Settings",
+    notifications: "Notifications",
+    help: "Help & Support",
+    privacy: "Privacy Policy",
+    language: "Language",
   },
   nl: {
-    login: "Inloggen",
-    signUp: "Registreren",
-    welcomeBack: "Welkom Terug",
-    createAccount: "Account Aanmaken",
-    fullName: "Volledige Naam",
-    emailAddress: "E-mailadres",
-    password: "Wachtwoord",
-    confirmPassword: "Bevestig Wachtwoord",
-    signIn: "Inloggen",
-    createAccountBtn: "Account Aanmaken",
-    forgotPassword: "Wachtwoord vergeten?",
+    labsRooms: "Labs & Lokalen",
+    faculty: "Docenten",
+    today: "Vandaag",
+    reports: "Rapporten",
+    more: "Meer",
+    softwareDevLabs: "Software Development Labs",
+    softwareDevFaculty: "Software Development Docenten",
+    todaysSchedule: "Vandaag's Rooster",
+    available: "Beschikbaar",
+    reserved: "Gereserveerd",
+    reserveRoom: "Lokaal Reserveren",
+    cancelReservation: "Reservering Annuleren",
+    bookConsultation: "Consultatie Boeken",
+    cancelBooking: "Boeking Annuleren",
+    teacher: "Docent",
+    capacity: "Capaciteit",
+    students: "studenten",
+    equipment: "Apparatuur",
+    expertise: "Expertise",
+    reservedBy: "Gereserveerd door",
+    week: "Week",
+    settings: "Instellingen",
+    notifications: "Meldingen",
+    help: "Help & Ondersteuning",
+    privacy: "Privacybeleid",
+    language: "Taal",
   },
 }
 
-export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [fullName, setFullName] = useState("")
-  const [language, setLanguage] = useState<"en" | "nl">("en")
-  const router = useRouter()
+const initialScheduleData = {
+  rooms: [
+    {
+      id: 1,
+      room: "Lab A101",
+      time: "08:00 - 10:00",
+      class: "Web Development",
+      teacher: "Mr. van der Berg",
+      status: "available",
+      capacity: 25,
+      equipment: "Computers, Projector",
+    },
+    {
+      id: 2,
+      room: "Lab B204",
+      time: "10:00 - 12:00",
+      class: "Database Management",
+      teacher: "Ms. de Vries",
+      status: "reserved",
+      capacity: 20,
+      equipment: "Computers, Whiteboard",
+      reservedBy: "John Doe",
+    },
+    {
+      id: 3,
+      room: "Lab C305",
+      time: "14:00 - 16:00",
+      class: "Network Security",
+      teacher: "Dr. Janssen",
+      status: "available",
+      capacity: 15,
+      equipment: "Computers, Lab Equipment",
+    },
+  ],
+  faculty: [
+    {
+      id: 1,
+      name: "Mr. van der Berg",
+      expertise: "Web Development, JavaScript",
+      time: "09:00 - 11:00",
+      status: "available",
+    },
+    {
+      id: 2,
+      name: "Ms. de Vries",
+      expertise: "Database Management, SQL",
+      time: "11:00 - 13:00",
+      status: "reserved",
+      reservedBy: "Jane Smith",
+    },
+    {
+      id: 3,
+      name: "Dr. Janssen",
+      expertise: "Network Security, Cybersecurity",
+      time: "15:00 - 17:00",
+      status: "available",
+    },
+  ],
+}
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({})
-  const [showLoginSuccess, setShowLoginSuccess] = useState(false)
+export default function DashboardPage() {
+  const [currentView, setCurrentView] = useState("rooms")
+  const [scheduleData, setScheduleData] = useState(initialScheduleData)
+  const [language, setLanguage] = useState<"en" | "nl">("en")
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Handle language from URL parameter
+  useEffect(() => {
+    const lang = searchParams.get("lang")
+    if (lang === "nl" || lang === "en") {
+      setLanguage(lang)
+    }
+  }, [searchParams])
 
   const t = translations[language]
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleReservation = (type: "rooms" | "faculty", id: number) => {
+    setScheduleData((prev) => ({
+      ...prev,
+      [type]: prev[type].map((item) =>
+        item.id === id ? { ...item, status: item.status === "available" ? "reserved" : "available" } : item,
+      ),
+    }))
+  }
 
-    // Clear previous errors
-    setErrors({})
-
-    // Validation
-    const newErrors: { [key: string]: string } = {}
-
-    if (!email.trim()) {
-      newErrors.email = language === "en" ? "Email is required" : "E-mail is verplicht"
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = language === "en" ? "Please enter a valid email" : "Voer een geldig e-mailadres in"
-    }
-
-    if (!password.trim()) {
-      newErrors.password = language === "en" ? "Password is required" : "Wachtwoord is verplicht"
-    } else if (password.length < 6) {
-      newErrors.password =
-        language === "en" ? "Password must be at least 6 characters" : "Wachtwoord moet minimaal 6 tekens zijn"
-    }
-
-    if (!isLogin) {
-      if (!fullName.trim()) {
-        newErrors.fullName = language === "en" ? "Full name is required" : "Volledige naam is verplicht"
-      }
-
-      if (!confirmPassword.trim()) {
-        newErrors.confirmPassword = language === "en" ? "Please confirm your password" : "Bevestig je wachtwoord"
-      } else if (password !== confirmPassword) {
-        newErrors.confirmPassword = language === "en" ? "Passwords do not match" : "Wachtwoorden komen niet overeen"
-      }
-    }
-
-    // If there are errors, show them and don't submit
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
-    }
-
-    // Show success popup
-    setShowLoginSuccess(true)
-
-    // Hide popup after 2 seconds and redirect
-    setTimeout(() => {
-      setShowLoginSuccess(false)
-      router.push(`/dashboard?lang=${language}`)
-    }, 2000)
+  const handleLogout = () => {
+    router.push("/")
   }
 
   const toggleLanguage = () => {
     setLanguage(language === "en" ? "nl" : "en")
+    setShowMoreMenu(false)
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "available":
+        return "bg-white text-black border border-gray-300"
+      case "reserved":
+        return "bg-black text-white"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
   }
 
   return (
-    <div className="h-screen w-full max-w-sm mx-auto bg-black relative overflow-hidden hide-scrollbar">
-      {/* Beautiful Dark Forest Road Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-500"
-        style={{
-          backgroundImage: `url("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image.png-jZo5HnttCJlSPKKFEYAeobHNolGioO.jpeg")`,
-        }}
-      />
-
-      {/* Dark overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/50" />
-
-      {/* Additional gradient overlays for depth */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-
-      {/* Animated floating elements */}
-      <div className="absolute top-20 left-8 w-32 h-32 bg-gradient-to-br from-gray-900/20 to-black/30 rounded-full blur-xl animate-pulse" />
-      <div className="absolute top-40 right-12 w-24 h-24 bg-gradient-to-br from-gray-800/25 to-gray-900/20 rounded-full blur-lg animate-pulse delay-1000" />
-      <div className="absolute bottom-32 left-16 w-28 h-28 bg-gradient-to-br from-black/35 to-gray-800/20 rounded-full blur-xl animate-pulse delay-500" />
-      <div className="absolute bottom-48 right-8 w-20 h-20 bg-gradient-to-br from-gray-900/30 to-black/25 rounded-full blur-lg animate-pulse delay-700" />
-
-      {/* Language Toggle - Top Right - FIXED */}
-      <div className="absolute top-4 right-4 z-20">
-        <Button
-          onClick={toggleLanguage}
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20 border border-gray-600/50 backdrop-blur-sm transition-all duration-300 hover:scale-105"
-        >
-          {language === "en" ? "NL" : "EN"}
-        </Button>
-      </div>
-
-      {/* Login/Signup Form */}
-      <div className="relative z-10 flex items-center justify-center h-full px-8 hide-scrollbar overflow-y-auto">
-        <div className="w-full max-w-xs animate-fade-in">
-          {/* Toggle Buttons */}
-          <div className="flex mb-8 bg-black/70 backdrop-blur-md rounded-lg p-1 border border-gray-600/30 transition-all duration-300">
-            <button
-              onClick={() => setIsLogin(true)}
-              className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all duration-300 ${
-                isLogin
-                  ? "bg-white text-black shadow-lg transform scale-105"
-                  : "text-gray-300 hover:text-white hover:bg-white/10"
-              }`}
+    <div className="h-screen w-full max-w-sm mx-auto bg-white flex flex-col hide-scrollbar relative">
+      {/* Header */}
+      <div className="bg-black text-white">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <Code className="h-6 w-6" />
+              <div className="text-xl font-bold">
+                {currentView === "rooms"
+                  ? t.labsRooms
+                  : currentView === "faculty"
+                    ? t.faculty
+                    : currentView === "today"
+                      ? t.today
+                      : t.reports}
+              </div>
+            </div>
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-gray-800 border border-gray-600"
             >
-              {t.login}
-            </button>
-            <button
-              onClick={() => setIsLogin(false)}
-              className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all duration-300 ${
-                !isLogin
-                  ? "bg-white text-black shadow-lg transform scale-105"
-                  : "text-gray-300 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              {t.signUp}
-            </button>
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
 
-          {/* Form Card */}
-          <div className="bg-black/80 backdrop-blur-xl border border-gray-600/40 rounded-2xl p-8 shadow-2xl transition-all duration-500 hover:shadow-3xl">
-            <h1 className="text-white text-3xl font-bold text-center mb-8 transition-all duration-300">
-              {isLogin ? t.welcomeBack : t.createAccount}
-            </h1>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {!isLogin && (
-                <div className="animate-slide-down">
-                  <Input
-                    type="text"
-                    placeholder={t.fullName}
-                    value={fullName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)}
-                    className={`bg-black/50 backdrop-blur-sm border ${errors.fullName ? "border-red-500" : "border-gray-500/50"} text-white placeholder-gray-400 focus:border-white focus:ring-white/20 rounded-xl h-12 transition-all duration-300 hover:border-gray-400/70`}
-                    required
-                  />
-                  {errors.fullName && (
-                    <p className="text-red-400 text-sm mt-2 ml-1 animate-slide-down">{errors.fullName}</p>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <Input
-                  type="email"
-                  placeholder={t.emailAddress}
-                  value={email}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                  className={`bg-black/50 backdrop-blur-sm border ${errors.email ? "border-red-500" : "border-gray-500/50"} text-white placeholder-gray-400 focus:border-white focus:ring-white/20 rounded-xl h-12 transition-all duration-300 hover:border-gray-400/70`}
-                  required
-                />
-                {errors.email && <p className="text-red-400 text-sm mt-2 ml-1 animate-slide-down">{errors.email}</p>}
-              </div>
-
-              <div>
-                <Input
-                  type="password"
-                  placeholder={t.password}
-                  value={password}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                  className={`bg-black/50 backdrop-blur-sm border ${errors.password ? "border-red-500" : "border-gray-500/50"} text-white placeholder-gray-400 focus:border-white focus:ring-white/20 rounded-xl h-12 transition-all duration-300 hover:border-gray-400/70`}
-                  required
-                />
-                {errors.password && (
-                  <p className="text-red-400 text-sm mt-2 ml-1 animate-slide-down">{errors.password}</p>
-                )}
-              </div>
-
-              {!isLogin && (
-                <div className="animate-slide-down">
-                  <Input
-                    type="password"
-                    placeholder={t.confirmPassword}
-                    value={confirmPassword}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
-                    className={`bg-black/50 backdrop-blur-sm border ${errors.confirmPassword ? "border-red-500" : "border-gray-500/50"} text-white placeholder-gray-400 focus:border-white focus:ring-white/20 rounded-xl h-12 transition-all duration-300 hover:border-gray-400/70`}
-                    required
-                  />
-                  {errors.confirmPassword && (
-                    <p className="text-red-400 text-sm mt-2 ml-1 animate-slide-down">{errors.confirmPassword}</p>
-                  )}
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full bg-white text-black hover:bg-gray-200 font-semibold py-3 h-12 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
-              >
-                {isLogin ? t.signIn : t.createAccountBtn}
-              </Button>
-            </form>
-
-            {isLogin && (
-              <div className="text-center mt-6">
-                <button className="text-gray-400 text-sm hover:text-white transition-colors duration-300 hover:underline">
-                  {t.forgotPassword}
-                </button>
-              </div>
-            )}
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 border border-gray-600">
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <div className="text-center">
+              <div className="font-bold text-lg">{t.week} 10</div>
+              <div className="text-sm text-gray-300">4 - 10 March</div>
+            </div>
+            <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 border border-gray-600">
+              <ChevronRight className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>
-      {/* Login Success Popup */}
-      {showLoginSuccess && (
+
+      {/* Content */}
+      <div className="flex-1 px-6 py-8 pb-24 overflow-y-auto hide-scrollbar">
+        {currentView === "rooms" && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-xl text-black flex items-center">
+              <MapPin className="h-6 w-6 mr-2" />
+              {t.softwareDevLabs}
+            </h3>
+            {scheduleData.rooms.map((room) => (
+              <Card
+                key={room.id}
+                className="border-2 border-black shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <div className="font-bold text-lg text-black flex items-center">
+                        <Code className="h-5 w-5 mr-2" />
+                        {room.room}
+                      </div>
+                      <div className="text-gray-600 font-medium">{room.class}</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {t.teacher}: {room.teacher}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {t.capacity}: {room.capacity} {t.students}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {t.equipment}: {room.equipment}
+                      </div>
+                    </div>
+                    <Badge className={`${getStatusColor(room.status)} font-semibold`}>
+                      {room.status === "available" ? t.available : t.reserved}
+                    </Badge>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="font-semibold text-black">{room.time}</div>
+                      <div className="text-sm text-gray-600">{t.today}</div>
+                    </div>
+
+                    <Button
+                      onClick={() => handleReservation("rooms", room.id)}
+                      className={`${
+                        room.status === "available"
+                          ? "bg-black text-white hover:bg-gray-800"
+                          : "bg-white text-black border-2 border-black hover:bg-gray-100"
+                      } font-semibold transition-colors`}
+                    >
+                      {room.status === "available" ? t.reserveRoom : t.cancelReservation}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {currentView === "faculty" && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-xl text-black flex items-center">
+              <User className="h-6 w-6 mr-2" />
+              {t.softwareDevFaculty}
+            </h3>
+            {scheduleData.faculty.map((teacher) => (
+              <Card
+                key={teacher.id}
+                className="border-2 border-black shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <Avatar className="h-16 w-16 border-2 border-black">
+                      <AvatarFallback className="bg-black text-white font-bold text-lg">
+                        {teacher.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="font-bold text-lg text-black">{teacher.name}</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {t.expertise}: {teacher.expertise}
+                      </div>
+                      <div className="font-semibold text-black mt-1">{teacher.time}</div>
+                    </div>
+                    <Badge className={`${getStatusColor(teacher.status)} font-semibold`}>
+                      {teacher.status === "available" ? t.available : t.reserved}
+                    </Badge>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={() => handleReservation("faculty", teacher.id)}
+                      className={`${
+                        teacher.status === "available"
+                          ? "bg-black text-white hover:bg-gray-800"
+                          : "bg-white text-black border-2 border-black hover:bg-gray-100"
+                      } font-semibold transition-colors`}
+                    >
+                      {teacher.status === "available" ? t.bookConsultation : t.cancelBooking}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {currentView === "today" && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-xl text-black flex items-center">
+              <Clock className="h-6 w-6 mr-2" />
+              {t.todaysSchedule}
+            </h3>
+            {scheduleData.rooms.slice(0, 3).map((schedule) => (
+              <Card key={schedule.id} className="border-2 border-black shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="font-bold text-xl text-black">{schedule.room}</div>
+                      <div className="font-semibold text-lg text-black">{schedule.time}</div>
+                      <div className="text-gray-600 font-medium">{schedule.class}</div>
+                      <div className="text-sm text-gray-500">{schedule.teacher}</div>
+                    </div>
+                    <div className="text-right">
+                      <Badge className={`${getStatusColor(schedule.status)} font-semibold mb-2`}>
+                        {schedule.status === "available" ? t.available : t.reserved}
+                      </Badge>
+                      {schedule.status === "reserved" && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Check className="h-4 w-4 mr-1" />
+                          {t.reservedBy} You
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* More Menu Modal */}
+      {showMoreMenu && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-6 m-6 shadow-2xl animate-fade-in">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+          <div className="bg-black border border-gray-600 rounded-2xl p-6 m-6 w-full max-w-xs">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-white text-lg font-bold">{t.more}</h3>
+              <Button
+                onClick={() => setShowMoreMenu(false)}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-gray-800"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={toggleLanguage}
+                className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Globe className="h-5 w-5 text-white" />
+                  <span className="text-white">{t.language}</span>
+                </div>
+                <span className="text-white">{language === "en" ? "NL" : "EN"}</span>
+              </button>
+
+              <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition-colors opacity-50">
+                <Settings className="h-5 w-5 text-gray-400" />
+                <span className="text-gray-400">{t.settings}</span>
               </div>
-              <div>
-                <h3 className="text-black font-bold text-lg">{language === "en" ? "Logged In!" : "Ingelogd!"}</h3>
-                <p className="text-gray-600 text-sm">{language === "en" ? "Welcome back" : "Welkom terug"}</p>
+
+              <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition-colors opacity-50">
+                <Bell className="h-5 w-5 text-gray-400" />
+                <span className="text-gray-400">{t.notifications}</span>
+              </div>
+
+              <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition-colors opacity-50">
+                <HelpCircle className="h-5 w-5 text-gray-400" />
+                <span className="text-gray-400">{t.help}</span>
+              </div>
+
+              <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition-colors opacity-50">
+                <Shield className="h-5 w-5 text-gray-400" />
+                <span className="text-gray-400">{t.privacy}</span>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Bottom Navigation */}
+      <div className="bg-black border-t-2 border-gray-800">
+        <div className="flex items-center justify-around py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex flex-col items-center space-y-1 relative transition-all duration-300 ${
+              currentView === "rooms" ? "text-white" : "text-gray-400 hover:text-white"
+            }`}
+            onClick={() => setCurrentView("rooms")}
+          >
+            {currentView === "rooms" && <div className="absolute inset-0 bg-gray-800 rounded-lg -z-10 scale-110"></div>}
+            <div className="relative z-10 flex flex-col items-center space-y-1">
+              <MapPin className="h-6 w-6" />
+              <span className="text-xs font-medium">{t.labsRooms.split(" ")[0]}</span>
+            </div>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex flex-col items-center space-y-1 relative transition-all duration-300 ${
+              currentView === "faculty" ? "text-white" : "text-gray-400 hover:text-white"
+            }`}
+            onClick={() => setCurrentView("faculty")}
+          >
+            {currentView === "faculty" && (
+              <div className="absolute inset-0 bg-gray-800 rounded-lg -z-10 scale-110"></div>
+            )}
+            <div className="relative z-10 flex flex-col items-center space-y-1">
+              <User className="h-6 w-6" />
+              <span className="text-xs font-medium">{t.faculty}</span>
+            </div>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex flex-col items-center space-y-1 relative transition-all duration-300 ${
+              currentView === "today" ? "text-white" : "text-gray-400 hover:text-white"
+            }`}
+            onClick={() => setCurrentView("today")}
+          >
+            {currentView === "today" && <div className="absolute inset-0 bg-gray-800 rounded-lg -z-10 scale-110"></div>}
+            <div className="relative z-10 flex flex-col items-center space-y-1">
+              <Clock className="h-6 w-6" />
+              <span className="text-xs font-medium">{t.today}</span>
+            </div>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center space-y-1 relative text-gray-400 hover:text-white transition-all duration-300"
+          >
+            <div className="relative z-10 flex flex-col items-center space-y-1">
+              <FileText className="h-6 w-6" />
+              <span className="text-xs font-medium">{t.reports}</span>
+            </div>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center space-y-1 relative text-gray-400 hover:text-white transition-all duration-300"
+            onClick={() => setShowMoreMenu(true)}
+          >
+            <div className="relative z-10 flex flex-col items-center space-y-1">
+              <MoreHorizontal className="h-6 w-6" />
+              <span className="text-xs font-medium">{t.more}</span>
+            </div>
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
